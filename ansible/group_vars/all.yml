@@ -1,0 +1,15 @@
+---
+# Directorio de despliegue en la VPS
+deploy_dir: /opt/honeynet
+
+# Zona horaria UTC: fiabilidad de las marcas temporales para el análisis posterior
+timezone: Etc/UTC
+
+# Puerto del SSH administrativo (deja libre el 22 para el honeypot Cowrie)
+admin_ssh_port: 64295
+
+# Subred de los contenedores. DEBE coincidir con docker-compose.yml
+honeynet_subnet: 172.28.0.0/24
+
+# Clave pública para el acceso administrativo a la VPS
+admin_pubkey_file: "~/.ssh/id_ed25519.pub"

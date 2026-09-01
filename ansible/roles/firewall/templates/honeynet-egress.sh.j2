@@ -1,0 +1,13 @@
+#!/bin/sh
+# Contención de egress de los honeypots (anti-pivote).
+# Impide que los contenedores de la subred {{ honeynet_subnet }} inicien
+# conexiones NUEVAS hacia destinos externos. Se inserta en la cadena
+# DOCKER-USER, que Docker evalúa antes que sus propias reglas.
+set -e
+
+SUBNET="{{ honeynet_subnet }}"
+RULE="-s $SUBNET ! -d $SUBNET -m conntrack --ctstate NEW -j DROP"
+
+# Idempotencia: elimina la regla si ya existe y la reinserta al principio.
+iptables -D DOCKER-USER $RULE 2>/dev/null || true
+iptables -I DOCKER-USER $RULE

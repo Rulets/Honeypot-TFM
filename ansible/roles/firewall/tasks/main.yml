@@ -1,0 +1,42 @@
+---
+# Cortafuegos del host (ufw) + contención de egress de los contenedores.
+
+- name: Instalar ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Permitir el SSH administrativo en ufw
+  ansible.builtin.command: "ufw allow {{ admin_ssh_port }}/tcp"
+  register: ufw_admin
+  changed_when: "'Skipping' not in ufw_admin.stdout"
+
+- name: Permitir los puertos de los honeypots en ufw
+  ansible.builtin.command: "ufw allow {{ item }}/tcp"
+  loop: [22, 23, 80, 21]
+  register: ufw_hp
+  changed_when: "'Skipping' not in ufw_hp.stdout"
+
+- name: Activar ufw (denegar entrante por defecto)
+  ansible.builtin.command: ufw --force enable
+  register: ufw_enable
+  changed_when: "'active' in ufw_enable.stdout"
+
+- name: Instalar el script de contención de egress
+  ansible.builtin.template:
+    src: honeynet-egress.sh.j2
+    dest: /usr/local/sbin/honeynet-egress.sh
+    mode: "0755"
+
+- name: Instalar el servicio systemd de contención de egress
+  ansible.builtin.template:
+    src: honeynet-egress.service.j2
+    dest: /etc/systemd/system/honeynet-egress.service
+    mode: "0644"
+
+- name: Habilitar y arrancar la contención de egress
+  ansible.builtin.systemd:
+    name: honeynet-egress.service
+    daemon_reload: true
+    enabled: true
+    state: started

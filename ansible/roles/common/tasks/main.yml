@@ -1,0 +1,57 @@
+---
+# Preparación base del sistema y endurecimiento del acceso administrativo.
+
+- name: Instalar paquetes base
+  ansible.builtin.apt:
+    name:
+      - rsync
+      - iptables
+      - curl
+      - ca-certificates
+      - systemd-timesyncd
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Establecer la zona horaria en UTC
+  ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
+  changed_when: false
+
+- name: Habilitar la sincronización horaria (NTP)
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+
+- name: Asegurar el directorio .ssh del administrador
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.ssh"
+    state: directory
+    mode: "0700"
+
+- name: Instalar la clave pública administrativa
+  ansible.builtin.copy:
+    content: "{{ lookup('file', admin_pubkey_file) }}"
+    dest: "{{ ansible_user_dir }}/.ssh/authorized_keys"
+    mode: "0600"
+
+- name: Mover el SSH administrativo al puerto {{ admin_ssh_port }}
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port '
+    line: "Port {{ admin_ssh_port }}"
+  notify: Reiniciar ssh
+
+- name: Deshabilitar la autenticación por contraseña
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication '
+    line: "PasswordAuthentication no"
+  notify: Reiniciar ssh
+
+- name: Restringir el acceso de root a solo clave
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin '
+    line: "PermitRootLogin prohibit-password"
+  notify: Reiniciar ssh

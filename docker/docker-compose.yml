@@ -1,0 +1,40 @@
+# Honeynet: Cowrie (SSH/Telnet) + OpenCanary (HTTP/FTP)
+# Exposición pública en los puertos reales de la VPS.
+
+services:
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: honeynet-cowrie
+    restart: unless-stopped
+    environment:
+      - COWRIE_TELNET_ENABLED=yes      # habilita el módulo Telnet
+    volumes:
+      - ./cowrie/etc:/cowrie/cowrie-git/etc:ro
+      - ./cowrie/log:/cowrie/cowrie-git/var/log/cowrie
+    ports:
+      - "22:2222"     # SSH    (honeypot)
+      - "23:2223"     # Telnet (honeypot)
+    networks:
+      - honeynet
+
+  opencanary:
+    build: ./opencanary
+    image: honeynet-opencanary:latest
+    container_name: honeynet-opencanary
+    restart: unless-stopped
+    volumes:
+      - ./opencanary/opencanary.conf:/etc/opencanaryd/opencanary.conf:ro
+      - ./opencanary/log:/var/log/opencanary
+    ports:
+      - "80:80"       # HTTP (honeypot)
+      - "21:21"       # FTP  (honeypot)
+    networks:
+      - honeynet
+
+networks:
+  honeynet:
+    name: honeynet
+    ipam:
+      config:
+        # Subred fija para la regla de contención de egress (DOCKER-USER)
+        - subnet: 172.28.0.0/24

@@ -1,0 +1,22 @@
+---
+# Instalación del motor Docker y del plugin Compose.
+
+- name: Comprobar si Docker ya está instalado
+  ansible.builtin.command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
+
+- name: Instalar Docker mediante el script oficial
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://get.docker.com | sh
+  args:
+    executable: /bin/bash
+  when: docker_check.rc != 0
+
+- name: Habilitar y arrancar el servicio Docker
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started

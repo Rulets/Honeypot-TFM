@@ -1,0 +1,17 @@
+# Registros capturados (datos operativos, no se versionan)
+logs/cowrie/*
+logs/opencanary/*
+!logs/cowrie/.gitkeep
+!logs/opencanary/.gitkeep
+
+# Artefactos de Python
+__pycache__/
+*.pyc
+
+# Claves y secretos
+*.pem
+id_ed25519*
+id_rsa*
+
+# Sistema
+.DS_Store

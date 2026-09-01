@@ -1,0 +1,12 @@
+---
+# Despliegue completo de la honeynet en la VPS.
+- name: Desplegar honeynet (Cowrie + OpenCanary)
+  hosts: honeynet
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common      # Base del sistema, NTP y endurecimiento SSH
+    - role: docker      # Motor Docker + plugin Compose
+    - role: firewall    # ufw + contención de egress (anti-pivote)
+    - role: honeypots   # Despliegue de los contenedores

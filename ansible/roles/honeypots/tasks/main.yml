@@ -1,0 +1,41 @@
+---
+# Despliegue de los honeypots mediante docker compose.
+
+- name: Crear el directorio de despliegue
+  ansible.builtin.file:
+    path: "{{ deploy_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copiar el proyecto Docker a la VPS
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../docker/"
+    dest: "{{ deploy_dir }}/docker/"
+    mode: preserve
+
+- name: Asegurar los directorios de logs (escribibles por los contenedores)
+  ansible.builtin.file:
+    path: "{{ deploy_dir }}/docker/{{ item }}"
+    state: directory
+    mode: "0777"
+  loop:
+    - cowrie/log
+    - opencanary/log
+
+- name: Construir y levantar la honeynet
+  ansible.builtin.command: docker compose up -d --build
+  args:
+    chdir: "{{ deploy_dir }}/docker"
+  register: compose_up
+  changed_when: "'Started' in compose_up.stderr or 'Created' in compose_up.stderr"
+
+- name: Mostrar el estado de los contenedores
+  ansible.builtin.command: docker compose ps
+  args:
+    chdir: "{{ deploy_dir }}/docker"
+  register: compose_ps
+  changed_when: false
+
+- name: Estado de la honeynet
+  ansible.builtin.debug:
+    var: compose_ps.stdout_lines
